@@ -4,8 +4,8 @@ import com.mpp.forms.ai.GeminiPromptHandler;
 import com.mpp.forms.domain.PromptParamsBo;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 @Service
 public class FormsQuestionCreationService {
@@ -17,7 +17,7 @@ public class FormsQuestionCreationService {
     }
 
     public String createQuestions(PromptParamsBo promptParams) {
-        if (Arrays.asList(promptParams.getSubject(), promptParams.getSubject()).stream().anyMatch(Objects::isNull)) {
+        if (Stream.of(promptParams.getSubject(), promptParams.getSubject()).anyMatch(Objects::isNull)) {
             promptParams.setQuestionQuantity(10);
             promptParams.setSubject("Fonologia e Ortografia");
         }

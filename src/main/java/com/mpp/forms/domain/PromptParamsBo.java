@@ -10,4 +10,5 @@ public class PromptParamsBo {
     private String subject;
     private String schoolContent;
     private Integer questionQuantity;
+    private String formsTitle;
 }

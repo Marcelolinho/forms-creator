@@ -22,7 +22,7 @@ public class PromptController {
 
     @PostMapping
     public String createFormsWithQuestions(PromptParamsBo promptParams) {
-        return formsCreationService.createFormsWithQuestions(promptParams);
+        return formsCreationService.createForms(promptParams);
     }
 
     @PostMapping("/test")
