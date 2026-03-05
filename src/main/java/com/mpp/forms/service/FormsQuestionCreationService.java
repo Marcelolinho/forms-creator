@@ -1,7 +1,7 @@
 package com.mpp.forms.service;
 
 import com.mpp.forms.ai.GeminiPromptHandler;
-import com.mpp.forms.domain.PromptParamsBo;
+import com.mpp.forms.domain.forms.PromptParamsBo;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;

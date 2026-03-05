@@ -1,6 +1,6 @@
 package com.mpp.forms.ai;
 
-import com.mpp.forms.domain.PromptParamsBo;
+import com.mpp.forms.domain.forms.PromptParamsBo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Value;

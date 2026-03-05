@@ -1,6 +1,6 @@
 package com.mpp.forms.controllers;
 
-import com.mpp.forms.domain.PromptParamsBo;
+import com.mpp.forms.domain.forms.PromptParamsBo;
 import com.mpp.forms.service.FormsCreationService;
 import com.mpp.forms.service.FormsQuestionCreationService;
 import org.springframework.web.bind.annotation.PostMapping;
