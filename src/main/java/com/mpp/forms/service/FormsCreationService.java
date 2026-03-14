@@ -15,7 +15,7 @@ public class FormsCreationService {
     }
 
     public String createForms(PromptParamsBo promptParams) {
-        Credential teste = googleAuthenticationService.getGoogleAppCredentials();
+        String teste = googleAuthenticationService.getGoogleAppCredentials();
 
         if (teste == null) {
             return "deu errado";

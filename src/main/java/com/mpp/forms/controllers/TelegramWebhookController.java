@@ -3,6 +3,7 @@ package com.mpp.forms.controllers;
 import com.mpp.forms.controllers.dto.TelegramWebhookDto;
 import com.mpp.forms.service.TelegramMessagingService;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -17,7 +18,7 @@ public class TelegramWebhookController {
     }
 
     @PostMapping
-    public void postWebhook(TelegramWebhookDto webhookDto) {
-        telegramMessagingService.handleWebhookMessage();
+    public void postWebhook(@RequestBody TelegramWebhookDto webhookDto) {
+        telegramMessagingService.handleWebhookMessage(webhookDto);
     }
 }
