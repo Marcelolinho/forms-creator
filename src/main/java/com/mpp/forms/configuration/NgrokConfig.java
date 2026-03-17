@@ -63,4 +63,5 @@ public class NgrokConfig {
         }
     }
 
+    // TODO: Initiate ngrok with Dockerfile and start it in this class
 }
