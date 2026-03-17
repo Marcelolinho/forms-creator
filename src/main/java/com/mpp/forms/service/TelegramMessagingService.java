@@ -1,5 +1,6 @@
 package com.mpp.forms.service;
 
+import com.mpp.forms.configuration.NgrokConfig;
 import com.mpp.forms.controllers.dto.TelegramWebhookDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,18 +24,18 @@ import java.util.Map;
 public class TelegramMessagingService {
 
     private final String baseUrl = "https://api.telegram.org/bot";
+    private final NgrokConfig ngrokConfig;
     @Value("${telegram.bot.key}")
     private String telegramToken;
-    @Value("${server.address}")
-    private String serverPublicUrl;
 
     private final RestTemplate restTemplate;
     private final ApplicationContext applicationContext;
     private static final Logger log = LoggerFactory.getLogger(TelegramMessagingService.class);
 
-    public TelegramMessagingService(RestTemplate restTemplate, ApplicationContext applicationContext) {
+    public TelegramMessagingService(RestTemplate restTemplate, ApplicationContext applicationContext, NgrokConfig ngrokConfig) {
         this.restTemplate = restTemplate;
         this.applicationContext = applicationContext;
+        this.ngrokConfig = ngrokConfig;
     }
 
     public void handleWebhookMessage(TelegramWebhookDto webhookDto) {
@@ -45,14 +46,15 @@ public class TelegramMessagingService {
     private void configureDefaultWebhook() {
         try {
             URI webhookConfigurationUri = new URI(String.format("%s%s/setWebhook", baseUrl, telegramToken));
-            String webhookControllerUrl = String.format("https://%s/api/telegram/webhook", serverPublicUrl);
+            String webhookControllerUrl = String.format("%s/api/telegram/webhook", ngrokConfig.getNgrokUrl());
 
             Map<String, Object> mapOfRequestParams = new HashMap<>();
             mapOfRequestParams.put("url", webhookControllerUrl);
 
             RequestEntity setWebhookRequestEntity = new RequestEntity(mapOfRequestParams, HttpMethod.POST, webhookConfigurationUri);
 
-            ResponseEntity<ResponseEntity> setWebhookResponseEntity = restTemplate.exchange(setWebhookRequestEntity, ResponseEntity.class);
+            ResponseEntity<Map> telegramWebhookResponseEntity = restTemplate.exchange(setWebhookRequestEntity, Map.class);
+            Map<String, Object> mapOfTelegramWebhookResponse = (Map<String, Object>) telegramWebhookResponseEntity.getBody();
             // TODO: Analisar o que ele responde aqui
             log.info("Webhook set for telegram on {}", webhookControllerUrl);
         } catch (URISyntaxException e) {
