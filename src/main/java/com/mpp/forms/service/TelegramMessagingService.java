@@ -1,6 +1,7 @@
 package com.mpp.forms.service;
 
 import com.mpp.forms.configuration.NgrokConfig;
+import com.mpp.forms.controllers.dto.TelegramMessageDto;
 import com.mpp.forms.controllers.dto.TelegramWebhookDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +18,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,15 +34,28 @@ public class TelegramMessagingService {
     private final ApplicationContext applicationContext;
     private static final Logger log = LoggerFactory.getLogger(TelegramMessagingService.class);
 
+    private ArrayList<TelegramWebhookDto> webhookBatchToProcess = new ArrayList<>();
+
     public TelegramMessagingService(RestTemplate restTemplate, ApplicationContext applicationContext, NgrokConfig ngrokConfig) {
         this.restTemplate = restTemplate;
         this.applicationContext = applicationContext;
         this.ngrokConfig = ngrokConfig;
     }
 
-    public void handleWebhookMessage(TelegramWebhookDto webhookDto) {
 
+
+    public void handleWebhookMessage(TelegramWebhookDto webhookDto) {
+        // TODO: Save on a BATCH
+        TelegramMessageDto messageDto = webhookDto.message();
+
+        if (messageDto.text().equals("/start")) {
+
+        }
+
+        webhookBatchToProcess.add(webhookDto);
     }
+
+
 
     @EventListener(ApplicationReadyEvent.class)
     private void configureDefaultWebhook() {
@@ -55,8 +70,8 @@ public class TelegramMessagingService {
 
             ResponseEntity<Map> telegramWebhookResponseEntity = restTemplate.exchange(setWebhookRequestEntity, Map.class);
             Map<String, Object> mapOfTelegramWebhookResponse = (Map<String, Object>) telegramWebhookResponseEntity.getBody();
-            // TODO: Analisar o que ele responde aqui
             log.info("Webhook set for telegram on {}", webhookControllerUrl);
+
         } catch (URISyntaxException e) {
             log.error("Error at creating URI to configure default Webhook endpoint!");
             throw new RuntimeException(e.getMessage());
