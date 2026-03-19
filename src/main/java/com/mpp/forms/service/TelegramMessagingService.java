@@ -42,8 +42,6 @@ public class TelegramMessagingService {
         this.ngrokConfig = ngrokConfig;
     }
 
-
-
     public void handleWebhookMessage(TelegramWebhookDto webhookDto) {
         // TODO: Save on a BATCH
         TelegramMessageDto messageDto = webhookDto.message();
@@ -55,22 +53,19 @@ public class TelegramMessagingService {
         webhookBatchToProcess.add(webhookDto);
     }
 
-
-
     @EventListener(ApplicationReadyEvent.class)
     private void configureDefaultWebhook() {
         try {
             URI webhookConfigurationUri = new URI(String.format("%s%s/setWebhook", baseUrl, telegramToken));
-            String webhookControllerUrl = String.format("%s/api/telegram/webhook", ngrokConfig.getNgrokUrl());
 
             Map<String, Object> mapOfRequestParams = new HashMap<>();
-            mapOfRequestParams.put("url", webhookControllerUrl);
+            mapOfRequestParams.put("url", getDynamicWebhookUrl());
 
             RequestEntity setWebhookRequestEntity = new RequestEntity(mapOfRequestParams, HttpMethod.POST, webhookConfigurationUri);
 
             ResponseEntity<Map> telegramWebhookResponseEntity = restTemplate.exchange(setWebhookRequestEntity, Map.class);
             Map<String, Object> mapOfTelegramWebhookResponse = (Map<String, Object>) telegramWebhookResponseEntity.getBody();
-            log.info("Webhook set for telegram on {}", webhookControllerUrl);
+            log.info("Webhook set for telegram on {}", getDynamicWebhookUrl());
 
         } catch (URISyntaxException e) {
             log.error("Error at creating URI to configure default Webhook endpoint!");
@@ -80,11 +75,28 @@ public class TelegramMessagingService {
 
     @EventListener(ContextClosedEvent.class)
     private void deleteDefaultWebhook() {
+        try {
+            URI webhookUnsetUrlUri = new URI(String.format("%s%s/deleteWebhook", baseUrl, telegramToken));
 
+            Map<String, Object> mapOfRequestParams = new HashMap<>();
+            mapOfRequestParams.put("url", getDynamicWebhookUrl());
+
+            RequestEntity setWebhookRequestEntity = new RequestEntity(mapOfRequestParams, HttpMethod.POST, webhookUnsetUrlUri);
+
+            ResponseEntity<Map> telegramUnsetWebhookResponseEntity = restTemplate.exchange(setWebhookRequestEntity, Map.class);
+            Map<String, Object> mapOfTelegramWebhookResponse = (Map<String, Object>) telegramUnsetWebhookResponseEntity.getBody();
+            log.info("Webhook unset for telegram on {}", getDynamicWebhookUrl());
+        } catch (URISyntaxException e) {
+
+        }
     }
 
     private String generateSecretTelegram() {
         // TODO: Generate Dynamic code to use as the "X-Telegram-Bot-Api-Secret-Token" for the bot -> Docs: https://core.telegram.org/bots/api#setwebhook
         return null;
+    }
+
+    private String getDynamicWebhookUrl() {
+        return String.format("%s/api/telegram/webhook", ngrokConfig.getNgrokUrl());
     }
 }

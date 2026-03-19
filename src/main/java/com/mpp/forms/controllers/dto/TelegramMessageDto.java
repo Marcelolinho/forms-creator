@@ -1,7 +1,7 @@
 package com.mpp.forms.controllers.dto;
 
-import java.time.OffsetTime;
+import java.util.Date;
 import java.util.Map;
 
-public record TelegramMessageDto(String messageId, TelegramFromDto from, OffsetTime date, String text, Map<String, Object> chat) {
+public record TelegramMessageDto(String messageId, TelegramFromDto from, long date, String text, Map<String, Object> chat) {
 }
