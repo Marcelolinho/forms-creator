@@ -1,6 +1,6 @@
 package com.mpp.forms.ai;
 
-import com.mpp.forms.domain.forms.PromptParamsBo;
+import com.mpp.forms.domain.forms.WorkflowMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,9 +24,9 @@ public class GeminiPromptHandler {
         this.client = chatClientBuilder.build();
     }
 
-    public String createGoogleFormsWithQuestion(PromptParamsBo promptParams) {
-        String subject = promptParams.getSubject();
-        Integer questionQuantity = promptParams.getQuestionQuantity();
+    public String createGoogleFormsWithQuestion(WorkflowMessage workflowMessage) {
+        String subject = workflowMessage.getSubject();
+        Integer questionQuantity = workflowMessage.getQuestionCount();
         String systemPromptWithParameters;
 
         try {
@@ -39,12 +39,10 @@ public class GeminiPromptHandler {
             throw new RuntimeException("Erro ao buscar resource: " + e.getMessage());
         }
 
-        String response = client.prompt()
+        return client.prompt()
                 .user(systemPromptWithParameters)
                 .call()
                 .content();
-
-        return response;
     }
 
     public String simplePrompt() {

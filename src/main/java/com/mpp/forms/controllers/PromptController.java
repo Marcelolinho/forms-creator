@@ -1,6 +1,6 @@
 package com.mpp.forms.controllers;
 
-import com.mpp.forms.domain.forms.PromptParamsBo;
+import com.mpp.forms.domain.forms.WorkflowMessage;
 import com.mpp.forms.service.FormsCreationService;
 import com.mpp.forms.service.FormsQuestionCreationService;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,13 +21,13 @@ public class PromptController {
     }
 
     @PostMapping
-    public String createFormsWithQuestions(PromptParamsBo promptParams) {
-        return formsCreationService.createForms(promptParams);
+    public String createFormsWithQuestions(WorkflowMessage workflowMessage) {
+        return formsCreationService.createForms();
     }
 
     @PostMapping("/test")
-    public String createQuestions(@RequestBody PromptParamsBo promptParams) {
-        return formsQuestionCreationService.createQuestions(promptParams);
+    public String createQuestions(@RequestBody WorkflowMessage workflowMessage) {
+        return formsQuestionCreationService.createQuestions(workflowMessage);
     }
 
     @PostMapping("/simple-prompt")

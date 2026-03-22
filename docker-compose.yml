@@ -2,10 +2,12 @@ services:
   app:
     build: .
     ports:
-      - "8000:8000"
+      - "8000:8080"
     container_name: forms-application
     depends_on:
       - ngrok
+    volumes:
+      - forms-tokens:/app/data/tokens
 
   ngrok:
     image: ngrok/ngrok:latest
@@ -15,3 +17,6 @@ services:
       - "4040:4040"
     environment:
       - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+
+volumes:
+  forms-tokens:

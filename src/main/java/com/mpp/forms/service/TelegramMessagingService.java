@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpMethod;
@@ -16,11 +15,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.mpp.forms.domain.forms.WorkflowMessage;
+
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class TelegramMessagingService {
@@ -29,28 +30,75 @@ public class TelegramMessagingService {
     private final NgrokConfig ngrokConfig;
     @Value("${telegram.bot.key}")
     private String telegramToken;
+    @Value("${telegram.authorized.user.id}")
+    private Long authorizedUserId;
 
     private final RestTemplate restTemplate;
-    private final ApplicationContext applicationContext;
+    private final FormsQuestionCreationService formsQuestionCreationService;
+    private final FormsCreationService formsCreationService;
     private static final Logger log = LoggerFactory.getLogger(TelegramMessagingService.class);
 
-    private ArrayList<TelegramWebhookDto> webhookBatchToProcess = new ArrayList<>();
-
-    public TelegramMessagingService(RestTemplate restTemplate, ApplicationContext applicationContext, NgrokConfig ngrokConfig) {
+    public TelegramMessagingService(RestTemplate restTemplate,
+                                    NgrokConfig ngrokConfig,
+                                    FormsQuestionCreationService formsQuestionCreationService,
+                                    FormsCreationService formsCreationService) {
         this.restTemplate = restTemplate;
-        this.applicationContext = applicationContext;
         this.ngrokConfig = ngrokConfig;
+        this.formsQuestionCreationService = formsQuestionCreationService;
+        this.formsCreationService = formsCreationService;
     }
 
     public void handleWebhookMessage(TelegramWebhookDto webhookDto) {
-        // TODO: Save on a BATCH
         TelegramMessageDto messageDto = webhookDto.message();
+        Object chatId = messageDto.chat().get("id");
+        String text = messageDto.text();
 
-        if (messageDto.text().equals("/start")) {
+//        if (!webhookDto.message().from().id().equals(authorizedUserId)) {
+//            return;
+//        }
 
+        if (text == null) {
+            return;
         }
 
-        webhookBatchToProcess.add(webhookDto);
+        if ("/start".equals(text)) {
+            sendTelegramReply(chatId, "Olá! Envie uma mensagem no formato: Conteudo: X Questoes: N");
+            return;
+        }
+
+        Optional<WorkflowMessage> optionalWorkflow = WorkflowMessage.parse(text);
+
+        if (optionalWorkflow.isEmpty()) {
+            sendTelegramReply(chatId, "Formato inválido. Use: Conteudo: X Questoes: N");
+            return;
+        }
+
+        WorkflowMessage workflowMessage = optionalWorkflow.get();
+        try {
+            String createdFormsId = formsCreationService.createForms();
+            String aiJson = formsQuestionCreationService.createQuestions(workflowMessage);
+            formsCreationService.populateForms(createdFormsId, aiJson);
+            sendTelegramReply(chatId,
+                    "Criei um formulário com " + workflowMessage.questionCount()
+                            + " questões sobre " + workflowMessage.subject());
+        } catch (Exception e) {
+            log.error("Error processing workflow for chatId {}: {}", chatId, e.getMessage(), e);
+            sendTelegramReply(chatId, "Desculpa, algo deu errado. Tente novamente em alguns minutos.");
+        }
+    }
+
+    private void sendTelegramReply(Object chatId, String text) {
+        try {
+            URI sendMessageUri = new URI(String.format("%s%s/sendMessage", baseUrl, telegramToken));
+
+            Map<String, Object> body = new HashMap<>();
+            body.put("chat_id", chatId);
+            body.put("text", text);
+
+            restTemplate.exchange(RequestEntity.post(sendMessageUri).body(body), Map.class);
+        } catch (Exception e) {
+            log.error("Failed to send Telegram reply to chatId {}: {}", chatId, e.getMessage(), e);
+        }
     }
 
     @EventListener(ApplicationReadyEvent.class)
@@ -91,12 +139,12 @@ public class TelegramMessagingService {
         }
     }
 
+    private String getDynamicWebhookUrl() {
+        return String.format("%s/api/telegram/webhook", ngrokConfig.getNgrokUrl());
+    }
+
     private String generateSecretTelegram() {
         // TODO: Generate Dynamic code to use as the "X-Telegram-Bot-Api-Secret-Token" for the bot -> Docs: https://core.telegram.org/bots/api#setwebhook
         return null;
-    }
-
-    private String getDynamicWebhookUrl() {
-        return String.format("%s/api/telegram/webhook", ngrokConfig.getNgrokUrl());
     }
 }
