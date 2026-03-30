@@ -3,6 +3,7 @@ package com.mpp.forms.service;
 import com.mpp.forms.configuration.NgrokConfig;
 import com.mpp.forms.controllers.dto.TelegramMessageDto;
 import com.mpp.forms.controllers.dto.TelegramWebhookDto;
+import com.mpp.forms.domain.forms.GoogleAuthUserBo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,6 +33,7 @@ public class TelegramMessagingService {
     private String telegramToken;
     @Value("${telegram.authorized.user.id}")
     private Long authorizedUserId;
+    private GoogleAuthUserBo momsUser;
 
     private final RestTemplate restTemplate;
     private final FormsQuestionCreationService formsQuestionCreationService;
@@ -46,6 +48,7 @@ public class TelegramMessagingService {
         this.ngrokConfig = ngrokConfig;
         this.formsQuestionCreationService = formsQuestionCreationService;
         this.formsCreationService = formsCreationService;
+        this.momsUser = new GoogleAuthUserBo();
     }
 
     public void handleWebhookMessage(TelegramWebhookDto webhookDto) {
@@ -61,8 +64,8 @@ public class TelegramMessagingService {
             return;
         }
 
-        if ("/start".equals(text)) {
-            sendTelegramReply(chatId, "Olá! Envie uma mensagem no formato: Conteudo: X Questoes: N");
+        if ("/logar".equals(text)) {
+            sendTelegramReply(chatId, "Clique no Link: " + formsCreationService.getAuthorizationUrl());
             return;
         }
 

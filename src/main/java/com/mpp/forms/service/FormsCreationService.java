@@ -1,6 +1,7 @@
 package com.mpp.forms.service;
 
 import com.google.api.client.auth.oauth2.Credential;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.RequestEntity;
 import org.springframework.stereotype.Service;
@@ -11,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@Slf4j
 public class FormsCreationService {
 
     private final GoogleAuthenticationService googleAuthenticationService;
@@ -20,6 +22,71 @@ public class FormsCreationService {
     public FormsCreationService(GoogleAuthenticationService googleAuthenticationService, RestTemplate restTemplate) {
         this.googleAuthenticationService = googleAuthenticationService;
         this.restTemplate = restTemplate;
+    }
+
+    public String createForms() {
+        HttpHeaders headers = buildAuthHeaders();
+
+        Map<String, Map<String, String>> newFormsBody = new HashMap<>();
+        newFormsBody.put("info", Map.of("title", "Novo Formulario Criado Pelo Marcelo", "documentTitle", "Novo Formulario Criado Pelo Marcelo"));
+
+        Map<String, Object> blankFormsResponseEntity = (Map<String, Object>) restTemplate.exchange(
+                RequestEntity.post(String.format("%s/v1/forms", googleApiBaseUrl)).headers(headers).body(newFormsBody),
+                Map.class).getBody();
+
+        String formsId = blankFormsResponseEntity.get("formId").toString();
+
+        if (formsId == null || formsId.isEmpty()) {
+            throw new RuntimeException("Erro ao tentar criar o formulario, nao foi retornaro o ID dele corretamente.");
+        }
+
+        transformFormsIntoQuiz(formsId);
+
+        return formsId;
+    }
+
+    public void transformFormsIntoQuiz(String formsId) {
+        log.info("Updating forms to a QUIZ");
+
+        String transformIntoQuizJson = "{\n" +
+                "  \"requests\": [\n" +
+                "    {\n" +
+                "      \"updateSettings\": {\n" +
+                "        \"settings\": {\n" +
+                "          \"quizSettings\": {\n" +
+                "            \"isQuiz\": true\n" +
+                "          }\n" +
+                "        },\n" +
+                "        \"updateMask\": \"quizSettings.isQuiz\"\n" +
+                "      }\n" +
+                "    }\n" +
+                "  ]\n" +
+                "}";
+
+        HttpHeaders headers = buildAuthHeaders();
+
+        restTemplate.exchange(
+                RequestEntity.post(String.format("%s/v1/forms/%s:batchUpdate", googleApiBaseUrl, formsId)).headers(headers).body(transformIntoQuizJson), Map.class
+        );
+
+        log.info("The forms is now a quiz!");
+    }
+
+    public void populateForms(String formsId, String formsJson) {
+        HttpHeaders headers = buildAuthHeaders();
+
+        log.info("Populating forms {} with this JSON: \n\n{}", formsId, formsJson);
+        Map<String, Object> blankFormsResponseEntity = (Map<String, Object>) restTemplate.exchange(
+                RequestEntity.post(String.format("%s/v1/forms/%s:batchUpdate", googleApiBaseUrl, formsId)).headers(headers).body(formsJson),
+                Map.class).getBody();
+
+        if (((List<Map<String, Object>>) blankFormsResponseEntity.get("replies")).isEmpty()) {
+            throw new RuntimeException("Questoes nao foram criadas");
+        }
+    }
+
+    public String getAuthorizationUrl() {
+        return googleAuthenticationService.buildAuthorizationUrl();
     }
 
     private HttpHeaders buildAuthHeaders() {
@@ -40,36 +107,5 @@ public class FormsCreationService {
         headers.add("Content-Type", "application/json");
         headers.add("Authorization", "Bearer " + credential.getAccessToken());
         return headers;
-    }
-
-    public String createForms() {
-        HttpHeaders headers = buildAuthHeaders();
-
-        Map<String, Map<String, String>> newFormsBody = new HashMap<>();
-        newFormsBody.put("info", Map.of("title", "Novo Formulario Criado Pelo Marcelo", "documentTitle", "Novo Formulario Criado Pelo Marcelo"));
-
-        Map<String, Object> blankFormsResponseEntity = (Map<String, Object>) restTemplate.exchange(
-                RequestEntity.post(String.format("%s/forms", googleApiBaseUrl)).headers(headers).body(newFormsBody),
-                Map.class).getBody();
-
-        String formsId = blankFormsResponseEntity.get("formId").toString();
-
-        if (formsId == null || formsId.isEmpty()) {
-            throw new RuntimeException("Erro ao tentar criar o formulario, nao foi retornaro o ID dele corretamente.");
-        }
-
-        return formsId;
-    }
-
-    public void populateForms(String formsId, String formsJson) {
-        HttpHeaders headers = buildAuthHeaders();
-
-        Map<String, Object> blankFormsResponseEntity = (Map<String, Object>) restTemplate.exchange(
-                RequestEntity.post(String.format("%s/forms/%s/batchUpdate", googleApiBaseUrl, formsId)).headers(headers).body(formsJson),
-                Map.class).getBody();
-
-        if (((List<Map<String, Object>>) blankFormsResponseEntity.get("replies")).isEmpty()) {
-            throw new RuntimeException("Questoes nao foram criadas");
-        }
     }
 }

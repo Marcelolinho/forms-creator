@@ -65,11 +65,14 @@ public class GoogleAuthenticationService {
             if (credential != null && credential.getRefreshToken() != null) {
                 log.info("Google OAuth: Stored credential found. Ready to make API calls.");
             } else {
+                String authorizationUrl = buildAuthorizationUrl();
                 log.warn("============================================");
                 log.warn("  GOOGLE AUTHORIZATION REQUIRED");
                 log.warn("  Open this URL in your browser:");
-                log.warn("  {}", buildAuthorizationUrl());
+                log.warn("  {}", authorizationUrl);
                 log.warn("============================================");
+
+                log.warn("\n\n\n URL to put on Google Cloud: {}", getRedirectUri());
             }
         } catch (Exception e) {
             log.error("Error checking Google OAuth credential status: {}", e.getMessage(), e);
